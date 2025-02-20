@@ -1,0 +1,109 @@
+diff --git a/pricing-calculator-csharp.cs b/pricing-calculator-csharp.cs
+index a111111..b222222 100644
+--- a/pricing-calculator-csharp.cs
++++ b/pricing-calculator-csharp.cs
+@@ -164,6 +164,21 @@ namespace PricingCalculator
+         {
+             items = new BindingList<PricingItem>();
+             dataGridView.DataSource = items;
++
++            var rightAlignedStyle = new DataGridViewCellStyle {
++                Alignment = DataGridViewContentAlignment.MiddleRight
++            };
++
++            var currencyStyle = new DataGridViewCellStyle {
++                Format = "N2",
++                Alignment = DataGridViewContentAlignment.MiddleRight
++            };
++
++            var baseColumnProperties = new {
++                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
++                MinimumWidth = 100,
++                FillWeight = 15
++            };
+
+             // Name Column
+             var nameColumn = new DataGridViewTextBoxColumn
+@@ -171,9 +186,7 @@ namespace PricingCalculator
+                 Name = "Name",
+                 DataPropertyName = "Name",
+                 HeaderText = "Item Name",
+-                MinimumWidth = 150,
+-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+-                FillWeight = 25
++                MinimumWidth = baseColumnProperties.MinimumWidth + 50
+             };
+
+             // Unit Cost Column
+@@ -181,10 +194,7 @@ namespace PricingCalculator
+                 Name = "UnitCost",
+                 DataPropertyName = "UnitCost",
+                 HeaderText = "Unit Cost ($)",
+-                MinimumWidth = 100,
+-                AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill,
+-                FillWeight = 15,
+-                DefaultCellStyle = new DataGridViewCellStyle { Format = "N2", Alignment = DataGridViewContentAlignment.MiddleRight }
++                DefaultCellStyle = currencyStyle
+             };
+
+@@ -300,31 +310,25 @@ namespace PricingCalculator
+         private PriceCalculation CalculatePrice(PricingItem item)
+         {
+-            if (item.UnitCost <= 0 || item.RetailPrice <= 0) return null;
++            if (item?.UnitCost <= 0 || item?.RetailPrice <= 0) return null;
+
+             const double minMarginPercent = 20;
+             double minViablePrice = item.UnitCost * (1 + minMarginPercent / 100);
+-            double recommendedPrice;
+-
+             string strategy = globalStrategy != "none" ? globalStrategy : item.Strategy.ToLower();
++            bool shouldRoundToWholeDollar = dollarStore || strategy == "dollar store";
+
+-            switch (strategy)
++            double priceMultiplier = strategy switch
+             {
+-                case "aggressive":
+-                    recommendedPrice = Math.Max(minViablePrice, item.RetailPrice * 0.95);
+-                    break;
+-                case "premium":
+-                    recommendedPrice = Math.Max(minViablePrice, item.RetailPrice * 1.1);
+-                    break;
+-                case "dollar store":
+-                    recommendedPrice = Math.Ceiling(minViablePrice);
+-                    break;
+-                default: // balanced
+-                    recommendedPrice = Math.Max(minViablePrice, item.RetailPrice * 0.98);
+-                    break;
+-            }
++                "aggressive" => 0.95,
++                "premium" => 1.1,
++                "dollar store" => 1.0,
++                _ => 0.98  // balanced
++            };
+
+-            if (dollarStore || strategy == "dollar store")
++            double recommendedPrice = Math.Max(minViablePrice, item.RetailPrice * priceMultiplier);
++
++            if (shouldRoundToWholeDollar)
+             {
+                 recommendedPrice = Math.Ceiling(recommendedPrice);
+             }
+@@ -332,14 +336,13 @@ namespace PricingCalculator
+                 recommendedPrice = Math.Round(recommendedPrice * 100) / 100;
+             }
+
+-            double marginPercent = ((recommendedPrice - item.UnitCost) / item.UnitCost) * 100;
+-            double priceRelativeToMarket = ((recommendedPrice / item.RetailPrice) - 1) * 100;
++            double marginPercent = Math.Round(((recommendedPrice - item.UnitCost) / item.UnitCost) * 100, 2);
++            double priceRelativeToMarket = Math.Round(((recommendedPrice / item.RetailPrice) - 1) * 100, 2);
+
+             return new PriceCalculation
+             {
+                 RecommendedPrice = recommendedPrice,
+-                MarginPercent = Math.Round(marginPercent * 100) / 100,
+-                PriceRelativeToMarket = Math.Round(priceRelativeToMarket * 100) / 100,
++                MarginPercent = marginPercent,
++                PriceRelativeToMarket = priceRelativeToMarket,
+                 StrategyUsed = strategy
+             };
+         }
