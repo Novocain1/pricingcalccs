@@ -66,7 +66,7 @@ Operations are organized into priority levels:
 ### Installation
 1. Clone the repository
    ```
-   git clone https://github.com/yourusername/PricingCalculator.git
+   git clone https://github.com/Novocain1/PricingCalculator.git
    ```
 2. Open the solution in Visual Studio
    ```
