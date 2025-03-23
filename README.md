@@ -115,4 +115,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - Special thanks to all contributors who have helped shape this project
+- Claude, an AI assistant from Anthropic, was used as a development tool to help design, refine, and document this application
 - Inspired by retail pricing best practices and industry standards
