@@ -1,71 +1,12 @@
-﻿using System.ComponentModel;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using Newtonsoft.Json;
 using System;
 using System.Drawing;
 using System.Windows.Forms;
-using System.Collections.Generic;
 
 namespace PricingCalculator
 {
-    public class SortableBindingList<T> : BindingList<T>
-    {
-        private bool _isSorted;
-        private PropertyDescriptor _sortProperty;
-        private ListSortDirection _sortDirection;
-
-        protected override bool SupportsSortingCore => true;
-
-        protected override bool IsSortedCore => _isSorted;
-
-        protected override PropertyDescriptor SortPropertyCore => _sortProperty;
-
-        protected override ListSortDirection SortDirectionCore => _sortDirection;
-
-        protected override void ApplySortCore(PropertyDescriptor prop, ListSortDirection direction)
-        {
-            _sortProperty = prop;
-            _sortDirection = direction;
-
-            List<T> itemsList = (List<T>)Items;
-            itemsList.Sort(Compare);
-
-            _isSorted = true;
-            OnListChanged(new ListChangedEventArgs(ListChangedType.Reset, -1));
-        }
-
-        private int Compare(T x, T y)
-        {
-            var result = CompareValues(
-                _sortProperty.GetValue(x),
-                _sortProperty.GetValue(y));
-
-            return _sortDirection == ListSortDirection.Ascending ? result : -result;
-        }
-
-        private int CompareValues(object x, object y)
-        {
-            if (x == null && y == null)
-                return 0;
-            if (x == null)
-                return -1;
-            if (y == null)
-                return 1;
-
-            if (x is IComparable comparableX && y is IComparable comparableY)
-                return comparableX.CompareTo(y);
-
-            return x.Equals(y) ? 0 : -1;
-        }
-
-        protected override void RemoveSortCore()
-        {
-            _isSorted = false;
-            _sortProperty = null;
-        }
-    }
-
     public partial class MainForm : Form
     {
         private SortableBindingList<PricingItem> items = new SortableBindingList<PricingItem>();
@@ -134,7 +75,7 @@ namespace PricingCalculator
 
 
             // Add sliders for each parameter
-            AddCompactSlider(layout, 0, "Base Increase (%)", 1, 10,
+            AddCompactSlider(layout, 0, "Base Increase (%)", 1, 200,
                 (int)(calculator.ReasonableConfig.BaseIncrease * 100),
                 value =>
                 {
@@ -143,7 +84,7 @@ namespace PricingCalculator
                     UpdateGrid();
                 });
 
-            AddCompactSlider(layout, 1, "Max Increase (%)", 5, 20,
+            AddCompactSlider(layout, 1, "Max Increase (%)", 1, 200,
                 (int)(calculator.ReasonableConfig.MaxIncrease * 100),
                 value =>
                 {
@@ -293,8 +234,7 @@ namespace PricingCalculator
         }
 
 
-        private void AddCompactSlider(TableLayoutPanel layout, int row, string labelText,
-                             int min, int max, int initialValue, Action<int> valueChanged)
+        private void AddCompactSlider(TableLayoutPanel layout, int row, string labelText, int min, int max, int initialValue, Action<int> valueChanged)
         {
             // Create label with more compact format
             var label = new Label
@@ -314,7 +254,8 @@ namespace PricingCalculator
                 Height = 25,
                 TickFrequency = (max - min) / 5,
                 TickStyle = TickStyle.TopLeft,
-                AutoSize = false
+                AutoSize = false,
+                Width = 1000,
             };
 
             // Create value display label
@@ -323,7 +264,7 @@ namespace PricingCalculator
                 Text = initialValue.ToString(),
                 TextAlign = ContentAlignment.MiddleCenter,
                 Width = 30,
-                Anchor = AnchorStyles.None
+                Anchor = AnchorStyles.None,
             };
 
             // Add event handler
@@ -632,11 +573,8 @@ namespace PricingCalculator
 
             dataGridView.DataError += (s, e) =>
             {
-                if (e.ColumnIndex == dataGridView.Columns["Strategy"].Index)
-                {
-                    var item = items[e.RowIndex];
-                    e.ThrowException = false;
-                }
+                var item = items[e.RowIndex];
+                e.ThrowException = false;
             };
 
             dataGridView.CellValidating += (s, e) =>
